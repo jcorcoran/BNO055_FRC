@@ -31,7 +31,7 @@ public class Robot extends SampleRobot {
 	private static BNO055 imu;
 	private double[] pos = new double[3]; // [x,y,z] position data
 	private BNO055.CalData cal;
-	private DecimalFormat f = new DecimalFormat("0000.000");
+	private DecimalFormat f = new DecimalFormat("+000.000;-000.000");
 
 	public Robot() {
 		imu = BNO055.getInstance();
