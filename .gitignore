@@ -44,3 +44,15 @@ local.properties
 
 # TeXlipse plugin
 .texlipse
+
+#FRC Specific
+/j2meclasses
+/suite
+/bin
+/image.suite
+/image.sym
+/build
+/resources
+build.xml
+build.properties
+sysProps.xml
