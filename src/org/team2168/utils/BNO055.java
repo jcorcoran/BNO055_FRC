@@ -18,7 +18,7 @@ import edu.wpi.first.wpilibj.I2C;
  *These sensors use I2C to communicate, 2 pins are required to interface.
  *
  *Adafruit invests time and resources providing this open source code,
- *please support Adafruit andopen-source hardware by purchasing products
+ *please support Adafruit and open-source hardware by purchasing products
  *from Adafruit!
  *
  *Written by KTOWN for Adafruit Industries.
@@ -33,7 +33,6 @@ public class BNO055 {
 
 	private static BNO055 instance;
 	private static I2C imu;
-	private static boolean initialized = false;
 	private static int _mode;
 
 	public class SystemStatus {
@@ -297,9 +296,8 @@ public class BNO055 {
 	 * @return the instantiated BNO055 object
 	 */
 	public static BNO055 getInstance(I2C.Port port, byte address) {
-		if(!initialized) {
+		if(instance == null) {
 			instance = new BNO055(port, address);
-			initialized = true;
 		}
 
 		return instance;
@@ -313,7 +311,6 @@ public class BNO055 {
 	public static BNO055 getInstance() {
 		return getInstance(I2C.Port.kOnboard, BNO055_ADDRESS_A);
 	}
-
 
 	/**
 	 * Sets up the HW
@@ -533,20 +530,18 @@ public class BNO055 {
 	 * @return an array of vectors. [x,y,z]
 	 */
 	public double[] getVector(vector_type_t vector_type) {
-		final int LEN = 6;
 		double[] xyz = new double[3];
-		byte[] buffer = new byte[LEN];
+		byte[] buffer = new byte[6];
 
-
-		int x = 0, y = 0, z = 0;
+		short x = 0, y = 0, z = 0;
 
 		/* Read vector data (6 bytes) */
 		readLen(vector_type.getVal(), buffer);
 
-		x = (((int)buffer[LEN-6]) & 0xFF) | ((((int)buffer[LEN-5]) << 8) & 0xFF00);
-		y = (((int)buffer[LEN-4]) & 0xFF) | ((((int)buffer[LEN-3]) << 8) & 0xFF00);
-		z = (((int)buffer[LEN-2]) & 0xFF) | ((((int)buffer[LEN-1]) << 8) & 0xFF00);
-
+		x = (short)((buffer[0] & 0xFF) | ((buffer[1] << 8) & 0xFF00));
+		y = (short)((buffer[2] & 0xFF) | ((buffer[3] << 8) & 0xFF00));
+		z = (short)((buffer[4] & 0xFF) | ((buffer[5] << 8) & 0xFF00));
+		
 		/* Convert the value to an appropriate range (section 3.6.4) */
 		/* and assign the value to the Vector type */
 		switch(vector_type) {
