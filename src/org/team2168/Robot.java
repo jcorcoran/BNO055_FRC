@@ -26,55 +26,37 @@ import edu.wpi.first.wpilibj.Timer;
  */
 public class Robot extends SampleRobot {
 
-	private static final double BNO055_SAMPLERATE_DELAY_S = 0.100;
-
 	private static BNO055 imu;
 	private double[] pos = new double[3]; // [x,y,z] position data
 	private BNO055.CalData cal;
 	private DecimalFormat f = new DecimalFormat("+000.000;-000.000");
 
 	public Robot() {
-		imu = BNO055.getInstance();
-
-		System.out.println("Orientation Sensor Raw Data Test\n");
-
-		/* Initialize the sensor */
-		if(!imu.begin(BNO055.opmode_t.OPERATION_MODE_NDOF)) {
-			/* There was a problem detecting the BNO055 ... check your connections */
-			while(true){
-				System.out.println("Ooops, no BNO055 detected ..."
-						+ "\n   Check your wiring or I2C address and reboot roboRIO."
-						+ "\n   See http://git.io/vEAh3 for wiring instructions.");
-				Timer.delay(1);
-			}
-		}
-
-		Timer.delay(1);
-
-		/* Display the current temperature */
-		System.out.println("Current Temperature: " + imu.getTemp() + " C");
-
-		imu.setExtCrystalUse(true);
-
-		System.out.println("Calibration status values: 0=uncalibrated, 3=fully calibrated");
+		imu = BNO055.getInstance(BNO055.opmode_t.OPERATION_MODE_IMUPLUS,
+				BNO055.vector_type_t.VECTOR_EULER);
 	}
 
 
 	public void disabled() {
 		while (isDisabled()) {
-			pos = imu.getVector(BNO055.vector_type_t.VECTOR_EULER);
+			System.out.println("COMMS: " + imu.isSensorPresent()
+					+ ", INITIALIZED: " + imu.isInitialized()
+					+ ", CALIBRATED: " + imu.isCalibrated());
+			if(imu.isInitialized()){
+				pos = imu.getVector();
+	
+				/* Display the floating point data */
+				System.out.println("\tX: " + f.format(pos[0])
+						+ " Y: " + f.format(pos[1]) + " Z: " + f.format(pos[2]));
+	
+				/* Display calibration status for each sensor. */
+				cal = imu.getCalibration();
+				System.out.println("\tCALIBRATION: Sys=" + cal.sys
+						+ " Gyro=" + cal.gyro + " Accel=" + cal.accel
+						+ " Mag=" + cal.mag);
+			}
 
-			/* Display the floating point data */
-			System.out.print("X: " + f.format(pos[0])
-					+ " Y: " + f.format(pos[1]) + " Z: " + f.format(pos[2]));
-
-			/* Display calibration status for each sensor. */
-			cal = imu.getCalibration();
-			System.out.println("\t\tCALIBRATION: Sys=" + cal.sys
-					+ " Gyro=" + cal.gyro + " Accel=" + cal.accel
-					+ " Mag=" + cal.mag);
-
-			Timer.delay(BNO055_SAMPLERATE_DELAY_S);
+			Timer.delay(0.2); // seconds
 		}
 	}
 
