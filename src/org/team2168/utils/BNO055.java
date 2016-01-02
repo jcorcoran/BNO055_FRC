@@ -1,5 +1,9 @@
 package org.team2168.utils;
 
+import java.util.TimerTask;
+
+import org.team2168.PID.sensors.ADXRS453Gyro;
+
 import edu.wpi.first.wpilibj.I2C;
 
 /**
@@ -27,6 +31,10 @@ import edu.wpi.first.wpilibj.I2C;
  *
  */
 public class BNO055 {
+	//Tread variables
+	private java.util.Timer executor;
+	private static final long THREAD_PERIOD = 100; //ms
+	
 	public static final byte BNO055_ADDRESS_A = 0x28;
 	public static final byte BNO055_ADDRESS_B = 0x29;
 	public static final int BNO055_ID = 0xA0;
@@ -276,9 +284,7 @@ public class BNO055 {
 			return val;
 		}
 	};
-
-	private static final boolean DEBUG = false; //set true to print diagnostics messages
-
+	
 	/**
 	 * Instantiates a new BNO055 class
 	 *
@@ -515,6 +521,46 @@ public class BNO055 {
 	}
 
 	/**
+	 * Returns true if all required sensors have completed their respective
+	 *   calibration sequence. Only sensors required by the current operating
+	 *   mode are checked. See Section 3.3.
+	 * @return true if calibration is complete for all sensors required for the
+	 *   mode the sensor is currently operating in. 
+	 */
+	public boolean isCalibrated() {
+		boolean retVal = true;
+		
+		//Per Table 3-3
+		boolean[][] sensorModeMap = new boolean[][]{
+			//{accel, mag, gyro}
+			{false, false, false}, // OPERATION_MODE_CONFIG
+			{ true, false, false}, // OPERATION_MODE_ACCONLY
+			{false,  true, false}, // OPERATION_MODE_MAGONLY
+			{false, false,  true}, // OPERATION_MODE_GYRONLY
+			{ true,  true, false}, // OPERATION_MODE_ACCMAG
+			{ true, false,  true}, // OPERATION_MODE_ACCGYRO
+			{false,  true,  true}, // OPERATION_MODE_MAGGYRO
+			{ true,  true,  true}, // OPERATION_MODE_AMG
+			{ true, false,  true}, // OPERATION_MODE_IMUPLUS
+			{ true,  true, false}, // OPERATION_MODE_COMPASS
+			{ true,  true, false}, // OPERATION_MODE_M4G
+			{ true,  true,  true}, // OPERATION_MODE_NDOF_FMC_OFF
+			{ true,  true,  true}  // OPERATION_MODE_NDOF
+		};
+
+		CalData data = getCalibration();
+		
+		if(sensorModeMap[_mode][0]) //Accelerometer used
+			retVal = retVal && (data.accel >= 3);
+		if(sensorModeMap[_mode][1]) //Magnetometer used
+			retVal = retVal && (data.mag >= 3);
+		if(sensorModeMap[_mode][2]) //Gyroscope used
+			retVal = retVal && (data.gyro >= 3);
+		
+		return retVal;
+	}
+	
+	/**
 	 *
 	 * @return temperature in degrees celsius.
 	 */
@@ -525,6 +571,15 @@ public class BNO055 {
 
 	/**
 	 * Gets a vector reading from the specified source
+	 *
+	 * Maximum data output rates for Fusion modes - See 3.6.3
+	 * 
+	 * Operating Mode		Data Output Rate
+	 *   IMU                  100 Hz
+	 *   COMPASS               20 Hz
+	 *   M4G                   50 Hz
+	 *   NDOF_FMC_OFF         100 Hz
+	 *   NDOF                 100 Hz
 	 *
 	 * @param vector_type
 	 * @return an array of vectors. [x,y,z]
@@ -634,8 +689,6 @@ public class BNO055 {
 	private boolean write8(reg_t reg, byte value) {
 		boolean retVal = false;
 
-		debug("Writing 0x" + Integer.toHexString(value)
-				+ " to: 0x" + Integer.toHexString(reg.getVal()));
 		retVal = imu.write(reg.getVal(), value);
 
 		return retVal;
@@ -677,23 +730,34 @@ public class BNO055 {
 		//byte[] temp = new byte[1];
 
 		if (buffer == null || buffer.length < 1) {
-			debug("Invalid length received.");
 			return false;
 		}
 
 		retVal = !imu.read(reg, buffer.length, buffer);
-		debug("Reading data from 0x" + Integer.toHexString(reg) + ", ret=" + retVal);
-		for(int i = 0; i < buffer.length; i++) {
-			debug("  Read[" + i + "]: 0x" + Integer.toHexString(buffer[i]));
-		}
 
 		return retVal;
 	}
+	
+	public void startThread() {
+		this.executor = new java.util.Timer();
+		this.executor.schedule(new BNO055UpdateTask(this), 0L, THREAD_PERIOD);
+	}
+	
+	private class BNO055UpdateTask extends TimerTask {
+		private BNO055 imu;
 
+		private BNO055UpdateTask(BNO055 imu) {
+			if (imu == null) {
+				throw new NullPointerException("BNO055 pointer null");
+			}
+			this.imu = imu;
+		}
 
-	private void debug(String val) {
-		if (DEBUG) {
-			System.out.println(val);
+		/**
+		 * Called periodically in its own thread
+		 */
+		public void run() {
+			imu.update();
 		}
 	}
 }
