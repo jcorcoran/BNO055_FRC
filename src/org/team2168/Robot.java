@@ -39,19 +39,24 @@ public class Robot extends SampleRobot {
 
 	public void disabled() {
 		while (isDisabled()) {
-			pos = imu.getVector();
+			System.out.println("COMMS: " + imu.isSensorPresent()
+					+ ", INITIALIZED: " + imu.isInitialized()
+					+ ", CALIBRATED: " + imu.isCalibrated());
+			if(imu.isInitialized()){
+				pos = imu.getVector();
+	
+				/* Display the floating point data */
+				System.out.println("\tX: " + f.format(pos[0])
+						+ " Y: " + f.format(pos[1]) + " Z: " + f.format(pos[2]));
+	
+				/* Display calibration status for each sensor. */
+				cal = imu.getCalibration();
+				System.out.println("\tCALIBRATION: Sys=" + cal.sys
+						+ " Gyro=" + cal.gyro + " Accel=" + cal.accel
+						+ " Mag=" + cal.mag);
+			}
 
-			/* Display the floating point data */
-			System.out.print("X: " + f.format(pos[0])
-					+ " Y: " + f.format(pos[1]) + " Z: " + f.format(pos[2]));
-
-			/* Display calibration status for each sensor. */
-			cal = imu.getCalibration();
-			System.out.println("\t\tCALIBRATION: Sys=" + cal.sys
-					+ " Gyro=" + cal.gyro + " Accel=" + cal.accel
-					+ " Mag=" + cal.mag);
-
-			Timer.delay(0.1); // seconds
+			Timer.delay(0.2); // seconds
 		}
 	}
 

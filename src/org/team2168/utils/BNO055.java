@@ -32,7 +32,7 @@ import edu.wpi.first.wpilibj.Timer;
 public class BNO055 {
 	//Tread variables
 	private java.util.Timer executor;
-	private static final long THREAD_PERIOD = 100; //ms
+	private static final long THREAD_PERIOD = 20; //ms - max poll rate on sensor.
 	
 	public static final byte BNO055_ADDRESS_A = 0x28;
 	public static final byte BNO055_ADDRESS_B = 0x29;
@@ -47,6 +47,7 @@ public class BNO055 {
 	
 	//State machine variables
 	private volatile int state = 0;
+	private volatile boolean sensorPresent = false;
 	private volatile boolean initialized = false;
 	private volatile double currentTime; //seconds
 	private volatile double nextTime; //seconds
@@ -346,6 +347,9 @@ public class BNO055 {
 	private void update() {
 		currentTime = Timer.getFPGATimestamp(); //seconds
 		if(!initialized) {
+//			System.out.println("State: " + state + ".  curr: " + currentTime
+//					+ ", next: " + nextTime);
+			
 			//Step through process of initializing the sensor in a non-
 			//  blocking manner. This sequence of events follows the process
 			//  defined in the original adafruit source as closely as possible.
@@ -355,15 +359,22 @@ public class BNO055 {
 				//Wait for the sensor to be present
 				if((0xFF & read8(reg_t.BNO055_CHIP_ID_ADDR)) != BNO055_ID) {
 					//Sensor not present, keep trying
+					sensorPresent = false;
 				} else {
 					//Sensor present, go to next state
+					sensorPresent = true;
 					state++;
+					nextTime = Timer.getFPGATimestamp() + 0.050;
 				}
 				break;
 			case 1:
-				//Switch to config mode (just in case since this is the default)
-				setMode(opmode_t.OPERATION_MODE_CONFIG.getVal());
-				nextTime = Timer.getFPGATimestamp() + 0.030;
+				if(currentTime >= nextTime) {
+					//Switch to config mode (just in case since this is the default)
+					setMode(opmode_t.OPERATION_MODE_CONFIG.getVal());
+					nextTime = Timer.getFPGATimestamp() + 0.050;
+					state++;
+				}
+				break;
 			case 2:
 				// Reset
 				if(currentTime >= nextTime){
@@ -385,19 +396,26 @@ public class BNO055 {
 				if(currentTime >= nextTime) {
 					/* Set to normal power mode */
 					write8(reg_t.BNO055_PWR_MODE_ADDR, (byte) powermode_t.POWER_MODE_NORMAL.getVal());
-					nextTime = Timer.getFPGATimestamp() + 0.010;
+					nextTime = Timer.getFPGATimestamp() + 0.050;
 					state++;
 				}
 				break;
 			case 5:
+				//Use external crystal
 				if(currentTime >= nextTime) {
 					write8(reg_t.BNO055_PAGE_ID_ADDR, (byte) 0x00);
-					write8(reg_t.BNO055_SYS_TRIGGER_ADDR, (byte) 0x00);
-					nextTime = Timer.getFPGATimestamp() + 0.010;
+					nextTime = Timer.getFPGATimestamp() + 0.050;
 					state++;
 				}
 				break;
 			case 6:
+				if(currentTime >= nextTime) {
+					write8(reg_t.BNO055_SYS_TRIGGER_ADDR, (byte) 0x80);
+					nextTime = Timer.getFPGATimestamp() + 0.500;
+					state++;
+				}
+				break;
+			case 7:
 				//Set operating mode to mode requested at instantiation
 				if(currentTime >= nextTime) {
 					setMode(requestedMode);
@@ -405,39 +423,16 @@ public class BNO055 {
 					state++;
 				}
 				break;
-			//Configure to use the external 32.768KHz crystal
-			case 7:
-				//Switch to config mode
-				if(currentTime >= nextTime) {
-					setMode(opmode_t.OPERATION_MODE_CONFIG.getVal());
-					nextTime = Timer.getFPGATimestamp() + 0.055;
-					state++;
-				}
-				break;
 			case 8:
-				//Use external crystal
 				if(currentTime >= nextTime) {
-					write8(reg_t.BNO055_PAGE_ID_ADDR, (byte) 0x00);
-					write8(reg_t.BNO055_SYS_TRIGGER_ADDR, (byte) 0x80);
-					nextTime = Timer.getFPGATimestamp() + 0.010;
 					state++;
 				}
-				break;
 			case 9:
-				//Set mode back to requested operation mode
-				if(currentTime >= nextTime) {
-					setMode(requestedMode);
-					nextTime = Timer.getFPGATimestamp() + 0.020;
-					state++;
-				}
-				break;
-			case 10:
-				if(currentTime >= nextTime) {
-					state++;
-				}
-			case 11:
-			default:
 				initialized = true;
+				break;
+			default:
+				//Should never get here - Fail safe
+				initialized = false;
 			}
 		} else {
 			//Sensor is initialized, periodically query data from the BNO055
@@ -541,6 +536,30 @@ public class BNO055 {
 	}
 
 	/**
+	 * Diagnostic method to determine if communications with the sensor are active.
+	 *   Note this method returns true after first establishing communications
+	 *   with the sensor.
+	 *   Communications are not actively monitored once sensor initialization
+	 *     has started.
+	 * @return true if the sensor is found on the I2C bus
+	 */
+	public boolean isSensorPresent() {
+		return sensorPresent;
+	}
+
+	/**
+	 * After power is applied, the sensor needs to be configured for use.
+	 *   During this initialization period the sensor will not return position
+	 *   vector data. Once initialization is complete, data can be read,
+	 *   although the sensor may not have completed calibration.
+	 *   See isCalibrated. 
+	 * @return true when the sensor is initialized.
+	 */
+	public boolean isInitialized() {
+		return initialized;
+	}
+	
+	/**
 	 * Gets current calibration state.
 	 * @return each value will be set to 0 if not calibrated, 3 if fully
 	 *   calibrated.
@@ -596,18 +615,6 @@ public class BNO055 {
 			retVal = retVal && (data.gyro >= 3);
 		
 		return retVal;
-	}
-	
-	/**
-	 * After power is applied, the sensor needs to be configured for use.
-	 *   During this initialization period the sensor will not return position
-	 *   vector data. Once initialization is complete, data can be read,
-	 *   although the sensor may not have completed calibration.
-	 *   See isCalibrated. 
-	 * @return true when the sensor is initialized.
-	 */
-	public boolean isInitialized() {
-		return initialized;
 	}
 	
 	/**
