@@ -47,7 +47,8 @@ public class Robot extends SampleRobot {
 	
 				/* Display the floating point data */
 				System.out.println("\tX: " + f.format(pos[0])
-						+ " Y: " + f.format(pos[1]) + " Z: " + f.format(pos[2]));
+						+ " Y: " + f.format(pos[1]) + " Z: " + f.format(pos[2])
+						+ "  H: " + imu.getHeading());
 	
 				/* Display calibration status for each sensor. */
 				cal = imu.getCalibration();
