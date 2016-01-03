@@ -5,10 +5,10 @@ A test project to illustrate how to use the BNO055 sensor ([datasheet pdf] (http
 
 This code is a port of the [Adafruit BNO055 arduino library](https://github.com/adafruit/Adafruit_BNO055/blob/master/Adafruit_BNO055.cpp).
 At the time of writing, this sensor was available from:
- - $35: [Adafruit](http://www.adafruit.com/product/2472)
- - $35: [digikey](http://www.digikey.com/product-detail/en/2472/1528-1426-ND/5699182)
- - $40: [Amazon](http://www.amazon.com/Adafruit-Absolute-Orientation-Fusion-Breakout/dp/B017PEIGIG) (prime eligible)
- - $21: The Atmel breakout board at [digikey](http://www.digikey.com/product-detail/en/ATBNO055-XPRO/ATBNO055-XPRO-ND/5230918) will likely also work (untested).
+ - $35 + S/H: [Adafruit](http://www.adafruit.com/product/2472)
+ - $35 + S/H: [digikey](http://www.digikey.com/product-detail/en/2472/1528-1426-ND/5699182)
+ - $40 + $3 S/H (prime eligible): [Amazon](http://www.amazon.com/Adafruit-Absolute-Orientation-Fusion-Breakout/dp/B017PEIGIG)
+ - $21 + S/H: The Atmel breakout board at [digikey](http://www.digikey.com/product-detail/en/ATBNO055-XPRO/ATBNO055-XPRO-ND/5230918) will likely also work (untested). - Sparse documentation ([pdf](http://www.atmel.com/Images/BNO055_Xplained_pro_design_documentation.pdf))
 
 ##Wiring
 The demo code assumes you've wired the sensor to the I2C port on the roboRio, just below the CAN connector. All pins on the roboRio side are on the I2C port.
