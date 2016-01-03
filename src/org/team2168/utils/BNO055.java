@@ -6,11 +6,46 @@ import edu.wpi.first.wpilibj.I2C;
 import edu.wpi.first.wpilibj.Timer;
 
 /**
- * A Java port of the arduino library for the BNO055 from adafruit.
+ * BNO055 IMU for the FIRST Robotics Competition.
+ * References throughout the code are to the following sensor documentation:
+ *   http://git.io/vuOl1
+ * 
+ * To use the sensor, wire up to it over I2C on the roboRIO.
+ * Creating an instance of this class will cause communications with the sensor
+ *   to being.All communications with the sensor occur in a separate thread
+ *   from your robot code to avoid blocking the main robot program execution.
+ * 
+ *  Example:
+ *    private static BNO055 imu;
+ *    
+ *    public Robot() {
+ *        imu = BNO055.getInstance(BNO055.opmode_t.OPERATION_MODE_IMUPLUS,
+ *        		BNO055.vector_type_t.VECTOR_EULER);
+ *    }
+ * 
+ * You can check the status of the sensor by using the following methods:
+ *   isSensorPresent(); //Checks if the code can talk to the sensor over I2C
+ *                      // If this returns false, check your wiring.
+ *   isInitialized(); //Checks if the sensor initialization has completed.
+ *                    // Initialization takes about 3 seconds. You won't get
+ *                    // position data back from the sensor until its init'd. 
+ *   isCalibrated(); //The BNO055 will return position data after its init'd,
+ *   				 // but the position data may be inaccurate until all
+ *                   // required sensors report they are calibrated. Some
+ *                   // Calibration sequences require you to move the BNO055
+ *                   // around. See the method comments for more info.
  *
+ * Once the sensor calibration is complete , you can get position data by
+ *   by using the getVector() method. See this method definiton for usage info.
+ * 
+ * This code was originally ported from arduino source developed by Adafruit.
+ * See the original comment header below.
+ * 
  * @author james@team2168.org
  *
  *
+ *ORIGINAL ADAFRUIT HEADER - https://github.com/adafruit/Adafruit_BNO055/
+ *=======================================================================
  *This is a library for the BNO055 orientation sensor
  *
  *Designed specifically to work with the Adafruit BNO055 Breakout.
@@ -693,6 +728,9 @@ public class BNO055 {
 	 * heading:    0 to 360 degrees
 	 * roll:     -90 to +90 degrees
 	 * pitch:   -180 to +180 degrees
+	 *
+	 * For continuous rotation heading (doesn't roll over between 360/0) see
+	 *   the getHeading() method.
 	 *
 	 * Maximum data output rates for Fusion modes - See 3.6.3
 	 * 
