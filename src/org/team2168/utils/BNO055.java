@@ -52,6 +52,8 @@ public class BNO055 {
 	private volatile double currentTime; //seconds
 	private volatile double nextTime; //seconds
 	private volatile byte[] positionVector = new byte[6];
+	private volatile long turns = 0;
+	private volatile double[] xyz = new double[3];
 
 	public class SystemStatus {
 		public int system_status;
@@ -401,7 +403,7 @@ public class BNO055 {
 				}
 				break;
 			case 5:
-				//Use external crystal
+				//Use external crystal - 32.768 kHz
 				if(currentTime >= nextTime) {
 					write8(reg_t.BNO055_PAGE_ID_ADDR, (byte) 0x00);
 					nextTime = Timer.getFPGATimestamp() + 0.050;
@@ -435,11 +437,73 @@ public class BNO055 {
 				initialized = false;
 			}
 		} else {
-			//Sensor is initialized, periodically query data from the BNO055
-			
-			/* Read vector data (6 bytes) */
-			readLen(requestedVectorType.getVal(), positionVector);
+			//Sensor is initialized, periodically query position data
+			calculateVector();
 		}
+	}
+
+	/**
+	 * Query the sensor for position data.
+	 */
+	private void calculateVector() {
+		double[] pos = new double[3];
+		short x = 0, y = 0, z = 0;
+		double headingDiff = 0.0;
+		
+		// Read vector data (6 bytes)
+		readLen(requestedVectorType.getVal(), positionVector);
+
+		x = (short)((positionVector[0] & 0xFF)
+				| ((positionVector[1] << 8) & 0xFF00));
+		y = (short)((positionVector[2] & 0xFF)
+				| ((positionVector[3] << 8) & 0xFF00));
+		z = (short)((positionVector[4] & 0xFF)
+				| ((positionVector[5] << 8) & 0xFF00));
+
+		/* Convert the value to an appropriate range (section 3.6.4) */
+		/* and assign the value to the Vector type */
+		switch(requestedVectorType) {
+		case VECTOR_MAGNETOMETER:
+			/* 1uT = 16 LSB */
+			pos[0] = ((double)x)/16.0;
+			pos[1] = ((double)y)/16.0;
+			pos[2] = ((double)z)/16.0;
+			break;
+		case VECTOR_GYROSCOPE:
+			/* 1rps = 900 LSB */
+			pos[0] = ((double)x)/900.0;
+			pos[1] = ((double)y)/900.0;
+			pos[2] = ((double)z)/900.0;
+			break;
+		case VECTOR_EULER:
+			/* 1 degree = 16 LSB */
+			pos[0] = ((double)x)/16.0;
+			pos[1] = ((double)y)/16.0;
+			pos[2] = ((double)z)/16.0;
+			break;
+		case VECTOR_ACCELEROMETER:
+		case VECTOR_LINEARACCEL:
+		case VECTOR_GRAVITY:
+			/* 1m/s^2 = 100 LSB */
+			pos[0] = ((double)x)/100.0;
+			pos[1] = ((double)y)/100.0;
+			pos[2] = ((double)z)/100.0;
+			break;
+		}
+		
+		//calculate turns
+		headingDiff = xyz[0] - pos[0];
+		if(Math.abs(headingDiff) >= 350) {
+			//We've traveled past the zero heading position
+			if(headingDiff > 0) {
+				turns++;
+			} else {
+				turns--;
+			}
+		}
+		
+		//Update position vectors
+		xyz = pos;
 	}
 	
 	/**
@@ -458,9 +522,8 @@ public class BNO055 {
 	/**
 	 * Gets the latest system status info
 	 * @return
-	 * @throws InterruptedException
 	 */
-	public SystemStatus getSystemStatus() throws InterruptedException {
+	public SystemStatus getSystemStatus() {
 		SystemStatus status = new SystemStatus();
 
 		write8(reg_t.BNO055_PAGE_ID_ADDR, (byte) 0x00);
@@ -510,7 +573,7 @@ public class BNO055 {
 	/**
 	 * Gets the chip revision numbers
 	 *
-	 * @return
+	 * @return the chips revision information
 	 */
 	public RevInfo getRevInfo() {
 		int a = 0, b = 0;
@@ -618,7 +681,7 @@ public class BNO055 {
 	}
 	
 	/**
-	 *
+	 * Get the sensors internal temperature.
 	 * @return temperature in degrees celsius.
 	 */
 	public int getTemp() {
@@ -626,7 +689,10 @@ public class BNO055 {
 	}
 
 	/**
-	 * Gets a vector reading from the specified source
+	 * Gets a vector representing the sensors position (heading, roll, pitch).
+	 * heading:    0 to 360 degrees
+	 * roll:     -90 to +90 degrees
+	 * pitch:   -180 to +180 degrees
 	 *
 	 * Maximum data output rates for Fusion modes - See 3.6.3
 	 * 
@@ -637,55 +703,23 @@ public class BNO055 {
 	 *   NDOF_FMC_OFF         100 Hz
 	 *   NDOF                 100 Hz
 	 *
-	 * @param vector_type
-	 * @return an array of vectors. [x,y,z]
+	 * @return a vector [heading, roll, pitch]
 	 */
 	public double[] getVector() {
-		double[] xyz = new double[3];
-		short x = 0, y = 0, z = 0;
-
-		
-		x = (short)((positionVector[0] & 0xFF)
-				| ((positionVector[1] << 8) & 0xFF00));
-		y = (short)((positionVector[2] & 0xFF)
-				| ((positionVector[3] << 8) & 0xFF00));
-		z = (short)((positionVector[4] & 0xFF)
-				| ((positionVector[5] << 8) & 0xFF00));
-		
-		/* Convert the value to an appropriate range (section 3.6.4) */
-		/* and assign the value to the Vector type */
-		switch(requestedVectorType) {
-		case VECTOR_MAGNETOMETER:
-			/* 1uT = 16 LSB */
-			xyz[0] = ((double)x)/16.0;
-			xyz[1] = ((double)y)/16.0;
-			xyz[2] = ((double)z)/16.0;
-			break;
-		case VECTOR_GYROSCOPE:
-			/* 1rps = 900 LSB */
-			xyz[0] = ((double)x)/900.0;
-			xyz[1] = ((double)y)/900.0;
-			xyz[2] = ((double)z)/900.0;
-			break;
-		case VECTOR_EULER:
-			/* 1 degree = 16 LSB */
-			xyz[0] = ((double)x)/16.0;
-			xyz[1] = ((double)y)/16.0;
-			xyz[2] = ((double)z)/16.0;
-			break;
-		case VECTOR_ACCELEROMETER:
-		case VECTOR_LINEARACCEL:
-		case VECTOR_GRAVITY:
-			/* 1m/s^2 = 100 LSB */
-			xyz[0] = ((double)x)/100.0;
-			xyz[1] = ((double)y)/100.0;
-			xyz[2] = ((double)z)/100.0;
-			break;
-		}
-
 		return xyz;
 	}
-
+	
+	/**
+	 * The heading of the sensor (x axis) in continuous format. Eg rotating the
+	 *   sensor clockwise two full rotations will return a value of 720 degrees.
+	 * The getVector method will return heading in a constrained 0 - 360 deg
+	 *   format if required.
+	 * @return heading in degrees
+	 */
+	public double getHeading() {
+		return xyz[0] + turns * 360;
+	}
+	
 	/**
 	 * Writes an 8 bit value over I2C
 	 * @param reg the register to write the data to
