@@ -13,14 +13,16 @@ At the time of writing, this sensor was available from:
 ##Wiring
 The demo code assumes you've wired the sensor to the I2C port on the roboRio, just below the CAN connector. All pins on the roboRio side are on the I2C port.
 
-roboRio Pin | Adafruit Breakout Pin | Atmel Breakout Pin 
-------------|-----------------------|--------------------
-3.3V        | Vin                   | 20
-GND         | GND                   | 19
-SDA         | SDA                   | 11
-SCL         | SCL                   | 12
+roboRio Pin | Adafruit Breakout Board Pin | Atmel Breakout Board Pin 
+------------|-----------------------------|--------------------------
+3.3V        | Vin                         | 20
+GND         | GND                         | 19
+SDA         | SDA                         | 11
+SCL         | SCL                         | 12
 
-Pinouts for the BNO055 sensor can be found [here](https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/pinouts).
+More information on the pinouts for the BNO055 breakout boards can be found here:
+ - [Adafruit](https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/pinouts)
+ - Atmel [pdf](http://www.atmel.com/Images/BNO055_Xplained_pro_design_documentation.pdf)
 
 ##Video Demos
 Coming soon.
