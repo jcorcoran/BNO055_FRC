@@ -1,5 +1,6 @@
 # BNO055_FRC
-<img src="https://learn.adafruit.com/system/assets/assets/000/024/666/medium800/sensors_pinout.jpg" width="300">
+<img src="Adafruit_Board.jpg" height="200">
+<img src="BNO055_Xplained_Pro.jpg" height="200">
 
 A test project to illustrate how to use the BNO055 sensor ([datasheet pdf] (http://www.adafruit.com/datasheets/BST_BNO055_DS000_12.pdf)) with the FRC control system.
 
@@ -19,7 +20,7 @@ roboRio Pin (I2C header) | Adafruit Breakout Board Pin | Atmel Breakout Board Pi
 GND                      | GND                         | 19
 SDA                      | SDA                         | 11
 SCL                      | SCL                         | 12
-                         |                             | Also connect pin 5 to gnd (to set I2C address to 0x28).
+                         |                             | Also connect pin 5 to GND (to set I2C address to 0x28).
 
 More information on the pinouts for the BNO055 breakout boards can be found here:
  - [Adafruit](https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/pinouts)
