@@ -19,6 +19,7 @@ roboRio Pin (I2C header) | Adafruit Breakout Board Pin | Atmel Breakout Board Pi
 GND                      | GND                         | 19
 SDA                      | SDA                         | 11
 SCL                      | SCL                         | 12
+                         |                             | Also connect pin 5 to gnd (to set I2C address to 0x28).
 
 More information on the pinouts for the BNO055 breakout boards can be found here:
  - [Adafruit](https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/pinouts)
