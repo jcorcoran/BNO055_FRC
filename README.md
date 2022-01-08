@@ -11,7 +11,7 @@ At the time of writing, this sensor was available from:
  - $40 + $3 S/H (prime eligible): [Amazon](http://www.amazon.com/Adafruit-Absolute-Orientation-Fusion-Breakout/dp/B017PEIGIG)
  - $21 + S/H: The Atmel breakout board at [digikey](http://www.digikey.com/product-detail/en/ATBNO055-XPRO/ATBNO055-XPRO-ND/5230918) will also work. - Sparse documentation ([pdf](http://www.atmel.com/Images/BNO055_Xplained_pro_design_documentation.pdf))
 
-##Wiring
+## Wiring
 The demo code assumes you've wired the sensor to the I2C port on the roboRio, just below the CAN connector. And that the sensor is at I2C address 0x28 (This is the default for the Adafruit board. Pin 5 needs to be wired as noted below for the Atmel board).
 
 roboRio Pin (I2C header) | Adafruit Breakout Board Pin | Atmel Breakout Board Pin 
@@ -19,12 +19,11 @@ roboRio Pin (I2C header) | Adafruit Breakout Board Pin | Atmel Breakout Board Pi
 3.3V                     | Vin                         | 20
 GND                      | GND                         | 19
 SDA                      | SDA                         | 11
-SCL                      | SCL                         | 12
-                         |                             | Also connect pin 5 to GND (to set I2C address to 0x28).
+SCL                      | SCL                         | 12 <br> Also connect pin 5 to GND (to set I2C address to 0x28).
 
 More information on the pinouts for the BNO055 breakout boards can be found here:
  - [Adafruit](https://learn.adafruit.com/adafruit-bno055-absolute-orientation-sensor/pinouts)
  - Atmel [pdf](http://www.atmel.com/Images/BNO055_Xplained_pro_design_documentation.pdf)
 
-##Video Demos
-Coming soon.
+## Video Demo:  
+https://www.youtube.com/watch?v=ssxibpOCFhI
